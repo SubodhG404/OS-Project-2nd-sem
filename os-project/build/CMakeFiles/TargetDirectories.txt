@@ -1,0 +1,3 @@
+/home/subodh/Documents/os-project/build/CMakeFiles/producer_consumer.dir
+/home/subodh/Documents/os-project/build/CMakeFiles/edit_cache.dir
+/home/subodh/Documents/os-project/build/CMakeFiles/rebuild_cache.dir
