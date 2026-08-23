@@ -49,14 +49,43 @@ void run_visualization() {
     sf::Font font; const auto path = font_path();
     if (path.empty() || !font.openFromFile(path)) return;
 
+    // Fixed virtual resolution: all drawing coordinates assume this size.
+    // The view below maps that virtual space onto the actual window,
+    // preserving aspect ratio (letterboxed) so the UI scales correctly
+    // at any window size, including fullscreen.
+    sf::View ui_view(sf::FloatRect({0.f, 0.f}, {float(WIDTH), float(HEIGHT)}));
+
+    auto fit_viewport = [&]() {
+        const sf::Vector2u wsz = window.getSize();
+        const float base_aspect = float(WIDTH) / float(HEIGHT);
+        const float win_aspect = float(wsz.x) / float(wsz.y);
+        float vw, vh;
+        if (win_aspect >= base_aspect) {
+            vh = 1.f;
+            vw = base_aspect / win_aspect;
+        } else {
+            vw = 1.f;
+            vh = win_aspect / base_aspect;
+        }
+        const float vx = (1.f - vw) / 2.f;
+        const float vy = (1.f - vh) / 2.f;
+        ui_view.setViewport(sf::FloatRect({vx, vy}, {vw, vh}));
+        window.setView(ui_view);
+    };
+    fit_viewport();
+
     int selected = 3;
     SimulationController simulation;
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) { simulation.stop(); window.close(); }
+            if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+                (void)resized;
+                fit_viewport();
+            }
             if (const auto* click = event->getIf<sf::Event::MouseButtonPressed>()) {
                 if (click->button != sf::Mouse::Button::Left) continue;
-                sf::Vector2f mouse(click->position);
+                sf::Vector2f mouse = window.mapPixelToCoords(click->position);
                 if (!simulation.is_running()) {
                     for (int i = 0; i < 5; ++i)
                         if (hit(mouse, {{35.f + i * 225.f, 103.f}, {205.f, 75.f}})) selected = i + 1;
